@@ -1,0 +1,9 @@
+query ContinentsWithCountries {
+  continents {
+    name
+    countries {
+      hoi: name
+      emoji
+    }
+  }
+}

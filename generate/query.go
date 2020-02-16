@@ -23,7 +23,7 @@ func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult) *bytes.Buffe
 					writeField(buf, f)
 				}
 			}
-			buf.WriteString("}\n")
+			buf.WriteString("}\n\n")
 		}
 	}
 
@@ -31,22 +31,27 @@ func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult) *bytes.Buffe
 }
 
 func writeField(buf *bytes.Buffer, f *ast.Field) {
+	typePrefix := ""
+	if isPointer(f) {
+		typePrefix = "*"
+	}
+	if isArray(f) {
+		typePrefix += "[]"
+	}
+
 	if f.SelectionSet != nil {
-		fmt.Fprintf(buf, "%s struct {\n", strings.Title(f.Alias))
+		fmt.Fprintf(buf, "%s %sstruct {\n", strings.Title(f.Alias), typePrefix)
 		for _, sel := range f.SelectionSet {
 			if f, ok := sel.(*ast.Field); ok {
 				writeField(buf, f)
 			}
 		}
-		fmt.Fprintf(buf, "} `%s`\n", getTags(f))
+		fmt.Fprintf(buf, "} `%s`\n", getFieldTags(f))
 		return
 	}
 
 	if bt, ok := baseTypeMap[f.Definition.Type.Name()]; ok {
-		if !f.Definition.Type.NonNull {
-			bt = "*" + bt
-		}
-		fmt.Fprintf(buf, "%s %s `%s`\n", strings.Title(f.Alias), bt, getTags(f))
+		fmt.Fprintf(buf, "%s %s%s `%s`\n", strings.Title(f.Alias), typePrefix, bt, getFieldTags(f))
 		return
 	}
 }
@@ -55,7 +60,7 @@ func nameFromFileName(fn string) string {
 	return strings.TrimSuffix(fn, path.Ext(fn))
 }
 
-func getTags(f *ast.Field) string {
+func getFieldTags(f *ast.Field) string {
 	tm := map[string]string{
 		`type`: f.Definition.Type.Name(),
 	}
@@ -68,9 +73,17 @@ func getTags(f *ast.Field) string {
 		if first {
 			first = false
 		} else {
-			t += " "
+			t += ", "
 		}
 		t += k + ":'" + v + "'"
 	}
 	return t + `"`
+}
+
+func isArray(f *ast.Field) bool {
+	return f.Definition.Type.Elem != nil
+}
+
+func isPointer(f *ast.Field) bool {
+	return !f.Definition.Type.NonNull
 }
