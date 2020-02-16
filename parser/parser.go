@@ -1,9 +1,11 @@
 package parser
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"path"
+	"regexp"
 
 	"github.com/pietdevries94/go-graphql-docgen/config"
 	"github.com/vektah/gqlparser"
@@ -12,6 +14,10 @@ import (
 	"github.com/vektah/gqlparser/parser"
 	"github.com/vektah/gqlparser/validator"
 )
+
+var findImportReg = regexp.MustCompile(`#import "(.*)"`)
+
+// var getImportFilenameReg = regexp.MustCompile(`#import ".*"`)
 
 type ParseResult struct {
 	Schema  *ast.Schema
@@ -34,18 +40,27 @@ func Parse(cfg *config.Config) (*ParseResult, error) {
 		return nil, err
 	}
 
-	qSources, err := getQuerySources(cfg.QueriesFolder)
+	res.Queries, err = loadDocuments(cfg.QueriesFolder, res.Schema)
 	if err != nil {
 		return nil, err
 	}
 
-	res.Queries = make([]*ast.QueryDocument, len(qSources))
+	return res, nil
+}
+
+func loadDocuments(folder string, schema *ast.Schema) ([]*ast.QueryDocument, error) {
+	qSources, err := getQuerySources(folder)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*ast.QueryDocument, len(qSources))
 	for i, qSrc := range qSources {
-		doc, err := loadQuery(res.Schema, qSrc)
+		doc, err := loadQuery(schema, qSrc)
 		if err != nil {
 			return nil, err
 		}
-		res.Queries[i] = doc
+		res[i] = doc
 	}
 	return res, nil
 }
@@ -116,14 +131,36 @@ func getQuerySources(folderPath string) ([]*ast.Source, error) {
 			continue
 		}
 
-		input, err := ioutil.ReadFile(fPath)
+		doc, err := ioutil.ReadFile(fPath)
 		if err != nil {
 			return nil, err
 		}
+
+		doc, err = insertImports(folderPath, doc)
+		if err != nil {
+			return nil, err
+		}
+
 		res = append(res, &ast.Source{
 			Name:  file.Name(),
-			Input: string(input),
+			Input: string(doc),
 		})
 	}
 	return res, nil
+}
+
+func insertImports(folderPath string, doc []byte) ([]byte, error) {
+	matches := findImportReg.FindAllSubmatch(doc, -1)
+	for _, match := range matches {
+		m := match[0]
+		path := path.Join(folderPath, string(match[1]))
+
+		importedFile, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+
+		doc = bytes.Replace(doc, m, importedFile, 1)
+	}
+	return doc, nil
 }

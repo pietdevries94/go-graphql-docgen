@@ -1,0 +1,6 @@
+fragment CountryPartial on Country {
+    code
+    name
+    currency
+    emoji
+}
