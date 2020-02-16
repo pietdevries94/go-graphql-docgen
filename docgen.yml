@@ -1,0 +1,5 @@
+schema: "./testdata/schema.graphql"
+queries_folder: "./testdata/queries"
+output:
+  file: "./testdata/foo.go"
+  package: foo
