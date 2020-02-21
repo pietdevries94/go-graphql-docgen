@@ -3,7 +3,7 @@ package generate
 import (
 	"bytes"
 	"fmt"
-	"github.com/vektah/gqlparser/ast"
+	"github.com/vektah/gqlparser/v2/ast"
 	"path"
 	"strings"
 
