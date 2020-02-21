@@ -1,0 +1,7 @@
+#import "../fragments/country.gql"
+
+query AllCountriesWithPartialTwo {
+  countries {
+    ...CountryPartial
+  }
+}

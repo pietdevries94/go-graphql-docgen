@@ -21,9 +21,9 @@ func Execute() {
 	parsed := parser.MustParse(cfg)
 	buf := bytes.NewBuffer(nil)
 	fmt.Fprintf(buf, "package %s\n\n", cfg.Output.Package)
-	res := generate.GenerateQueries(buf, parsed)
+	generate.GenerateQueries(buf, parsed)
 
-	err = ioutil.WriteFile(cfg.Output.File, res.Bytes(), 0644)
+	err = ioutil.WriteFile(cfg.Output.File, buf.Bytes(), 0644)
 	if err != nil {
 		panic(err)
 	}

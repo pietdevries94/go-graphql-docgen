@@ -10,24 +10,44 @@ import (
 	"github.com/pietdevries94/go-graphql-docgen/parser"
 )
 
-func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult) *bytes.Buffer {
+var generatedFragments = []string{}
+
+func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult) {
 	for _, query := range parsed.Queries {
+	fragmentLoop:
+		for _, frag := range query.Fragments {
+			name := frag.Name
+			if name == "" {
+				name = nameFromFileName(query.Position.Src.Name)
+			}
+			for _, fn := range generatedFragments {
+				if fn == name {
+					continue fragmentLoop
+				}
+			}
+			generatedFragments = append(generatedFragments, name)
+			fmt.Fprintf(buf, "type %sFragment ", strings.Title(name))
+			generateStruct(buf, frag.SelectionSet)
+		}
 		for _, op := range query.Operations {
 			name := op.Name
 			if name == "" {
 				name = nameFromFileName(query.Position.Src.Name)
 			}
-			fmt.Fprintf(buf, "type %sQueryResult struct {\n", strings.Title(name))
-			for _, sel := range op.SelectionSet {
-				if f, ok := sel.(*ast.Field); ok {
-					writeField(buf, f)
-				}
-			}
-			buf.WriteString("}\n\n")
+			fmt.Fprintf(buf, "type %sQueryResult ", strings.Title(name))
+			generateStruct(buf, op.SelectionSet)
 		}
 	}
+}
 
-	return buf
+func generateStruct(buf *bytes.Buffer, set ast.SelectionSet) {
+	buf.WriteString("struct {\n")
+	for _, sel := range set {
+		if f, ok := sel.(*ast.Field); ok {
+			writeField(buf, f)
+		}
+	}
+	buf.WriteString("}\n\n")
 }
 
 func writeField(buf *bytes.Buffer, f *ast.Field) {
@@ -44,6 +64,8 @@ func writeField(buf *bytes.Buffer, f *ast.Field) {
 		for _, sel := range f.SelectionSet {
 			if f, ok := sel.(*ast.Field); ok {
 				writeField(buf, f)
+			} else if frag, ok := sel.(*ast.FragmentSpread); ok {
+				writeFragment(buf, frag)
 			}
 		}
 		fmt.Fprintf(buf, "} `%s`\n", getFieldTags(f))
@@ -54,6 +76,10 @@ func writeField(buf *bytes.Buffer, f *ast.Field) {
 		fmt.Fprintf(buf, "%s %s%s `%s`\n", strings.Title(f.Alias), typePrefix, bt, getFieldTags(f))
 		return
 	}
+}
+
+func writeFragment(buf *bytes.Buffer, f *ast.FragmentSpread) {
+	fmt.Fprintf(buf, "*%sFragment", f.Name)
 }
 
 func nameFromFileName(fn string) string {
