@@ -3,5 +3,6 @@
 query AllCountriesWithPartialTwo {
   countries {
     ...CountryPartial
+    currency
   }
 }

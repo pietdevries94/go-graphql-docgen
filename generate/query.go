@@ -59,6 +59,12 @@ func writeField(buf *bytes.Buffer, f *ast.Field) {
 		typePrefix += "[]"
 	}
 
+	if isSingleFragment(f.SelectionSet) {
+		fmt.Fprintf(buf, "%s %s", strings.Title(f.Alias), typePrefix)
+		writeFragment(buf, f.SelectionSet[0].(*ast.FragmentSpread))
+		return
+	}
+
 	if f.SelectionSet != nil {
 		fmt.Fprintf(buf, "%s %sstruct {\n", strings.Title(f.Alias), typePrefix)
 		for _, sel := range f.SelectionSet {
@@ -79,11 +85,19 @@ func writeField(buf *bytes.Buffer, f *ast.Field) {
 }
 
 func writeFragment(buf *bytes.Buffer, f *ast.FragmentSpread) {
-	fmt.Fprintf(buf, "*%sFragment", f.Name)
+	fmt.Fprintf(buf, "*%sFragment\n", f.Name)
 }
 
 func nameFromFileName(fn string) string {
 	return strings.TrimSuffix(fn, path.Ext(fn))
+}
+
+func isSingleFragment(sel ast.SelectionSet) bool {
+	if sel != nil && len(sel) == 1 {
+		_, ok := (sel)[0].(*ast.FragmentSpread)
+		return ok
+	}
+	return false
 }
 
 func getFieldTags(f *ast.Field) string {
