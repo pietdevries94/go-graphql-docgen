@@ -36,26 +36,50 @@ func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult) {
 			}
 			fmt.Fprintf(buf, "type %sQueryResult ", strings.Title(name))
 			generateStruct(buf, op.SelectionSet)
+
+			if len(op.VariableDefinitions) > 0 {
+				generateVariablesStruct(buf, op, name)
+			}
 		}
 	}
 }
 
-func generateStruct(buf *bytes.Buffer, set ast.SelectionSet) {
-	buf.WriteString("struct {\n")
-	for _, sel := range set {
-		if f, ok := sel.(*ast.Field); ok {
-			writeField(buf, f)
+func generateVariablesStruct(buf *bytes.Buffer, op *ast.OperationDefinition, name string) {
+	fmt.Fprintf(buf, "type %sQueryVariables struct {\n", strings.Title(name))
+	for _, varDef := range op.VariableDefinitions {
+		typePrefix := ""
+		if isPointer(varDef.Type) {
+			typePrefix = "*"
+		}
+		if bt, ok := baseTypeMap[varDef.Type.Name()]; ok {
+			fmt.Fprintf(buf, "%s %s%s\n", name, typePrefix, bt)
 		}
 	}
 	buf.WriteString("}\n\n")
 }
 
+func generateStruct(buf *bytes.Buffer, set ast.SelectionSet) {
+	buf.WriteString("struct {\n")
+	for _, sel := range set {
+		parseSelection(buf, sel)
+	}
+	buf.WriteString("}\n\n")
+}
+
+func parseSelection(buf *bytes.Buffer, sel ast.Selection) {
+	if f, ok := sel.(*ast.Field); ok {
+		writeField(buf, f)
+	} else if frag, ok := sel.(*ast.FragmentSpread); ok {
+		writeFragment(buf, frag)
+	}
+}
+
 func writeField(buf *bytes.Buffer, f *ast.Field) {
 	typePrefix := ""
-	if isPointer(f) {
+	if isPointer(f.Definition.Type) {
 		typePrefix = "*"
 	}
-	if isArray(f) {
+	if isArray(f.Definition.Type) {
 		typePrefix += "[]"
 	}
 
@@ -68,11 +92,7 @@ func writeField(buf *bytes.Buffer, f *ast.Field) {
 	if f.SelectionSet != nil {
 		fmt.Fprintf(buf, "%s %sstruct {\n", strings.Title(f.Alias), typePrefix)
 		for _, sel := range f.SelectionSet {
-			if f, ok := sel.(*ast.Field); ok {
-				writeField(buf, f)
-			} else if frag, ok := sel.(*ast.FragmentSpread); ok {
-				writeFragment(buf, frag)
-			}
+			parseSelection(buf, sel)
 		}
 		fmt.Fprintf(buf, "} `%s`\n", getFieldTags(f))
 		return
@@ -120,10 +140,10 @@ func getFieldTags(f *ast.Field) string {
 	return t + `"`
 }
 
-func isArray(f *ast.Field) bool {
-	return f.Definition.Type.Elem != nil
+func isArray(t *ast.Type) bool {
+	return t.Elem != nil
 }
 
-func isPointer(f *ast.Field) bool {
-	return !f.Definition.Type.NonNull
+func isPointer(t *ast.Type) bool {
+	return !t.NonNull
 }
