@@ -26,7 +26,7 @@ func Execute() {
 	parsed := parser.MustParse(cfg)
 
 	schemaTypesBuf := newFileBuffer(cfg.Output.Package)
-	generate.GenerateSchemaTypes(schemaTypesBuf, parsed)
+	generate.GenerateSchemaTypes(schemaTypesBuf, parsed, cfg.Scalars)
 	writeFile(cfg.Output.Folder, "schemaTypes.go", schemaTypesBuf)
 
 	queriesBuf := newFileBuffer(cfg.Output.Package)

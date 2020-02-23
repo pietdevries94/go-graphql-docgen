@@ -1,5 +1,7 @@
 schema: ""
 queries_folder: ""
 output:
-  file: ""
+  folder: ""
   package: ""
+scalars:
+  foo: string

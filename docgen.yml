@@ -2,4 +2,6 @@ schema: "./testdata/schema.graphql"
 queries_folder: "./testdata/queries"
 output:
   folder: "./testoutput"
-  package: foo
+  package: testoutput
+scalars:
+  JSONObject: string
