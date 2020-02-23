@@ -4,3 +4,4 @@ output:
   folder: "./testoutput"
 scalars:
   JSONObject: string
+generate_client: true

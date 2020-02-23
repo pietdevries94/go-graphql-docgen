@@ -13,7 +13,8 @@ type Config struct {
 		Folder  string `yaml:"folder"`
 		Package string `yaml:"package"`
 	} `yaml:"output"`
-	Scalars map[string]string
+	Scalars        map[string]string `yaml:"scalars"`
+	GenerateClient bool              `yaml:"generate_client"`
 }
 
 func LoadConfig() (*Config, error) {

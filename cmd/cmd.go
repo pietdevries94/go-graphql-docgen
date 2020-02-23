@@ -31,7 +31,7 @@ func Execute() {
 	writeFile(cfg.Output.Folder, "schemaTypes.go", schemaTypesBuf)
 
 	queriesBuf := newFileBuffer(cfg)
-	generate.GenerateQueries(queriesBuf, parsed)
+	generate.GenerateQueries(queriesBuf, parsed, cfg.GenerateClient)
 	writeFile(cfg.Output.Folder, "queries.go", queriesBuf)
 
 	cmd := exec.Command(`gofmt`, `-w`, cfg.Output.Folder)

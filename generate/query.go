@@ -12,7 +12,11 @@ import (
 
 var generatedFragments = []string{}
 
-func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult) {
+func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult, generateClient bool) {
+	if generateClient {
+		createBaseClient(buf)
+	}
+
 	for _, query := range parsed.Queries {
 	fragmentLoop:
 		for _, frag := range query.Fragments {
@@ -34,24 +38,29 @@ func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult) {
 			if name == "" {
 				name = nameFromFileName(query.Position.Src.Name)
 			}
-			fmt.Fprintf(buf, "type %sQueryResult ", strings.Title(name))
+			name = strings.Title(name)
+			fmt.Fprintf(buf, "type %sQueryResult ", name)
 			generateStruct(buf, op.SelectionSet)
 
 			if len(op.VariableDefinitions) > 0 {
 				generateVariablesStruct(buf, op, name)
+			}
+
+			if generateClient {
+				generateClientFunction(buf, op, name)
 			}
 		}
 	}
 }
 
 func generateVariablesStruct(buf *bytes.Buffer, op *ast.OperationDefinition, name string) {
-	fmt.Fprintf(buf, "type %sQueryVariables struct {\n", strings.Title(name))
+	fmt.Fprintf(buf, "type %sQueryVariables struct {\n", name)
 	for _, varDef := range op.VariableDefinitions {
 		typePrefix := ""
 		if isPointer(varDef.Type) {
 			typePrefix = "*"
 		}
-		tn := varDef.Type.Name() + "Type"
+		tn := strings.Title(varDef.Type.Name()) + "Type"
 		if bt, ok := getBuildinTypeName(varDef.Type); ok {
 			tn = bt
 		}
@@ -90,12 +99,12 @@ func writeField(buf *bytes.Buffer, f *ast.Field) {
 		for _, sel := range f.SelectionSet {
 			parseSelection(buf, sel)
 		}
-		fmt.Fprintf(buf, "} `%s`\n", getFieldTags(f))
+		fmt.Fprint(buf, "}\n")
 		return
 	}
 
 	if bt, ok := getBuildinTypeName(f.Definition.Type); ok {
-		fmt.Fprintf(buf, "%s %s%s `%s`\n", strings.Title(f.Alias), typePrefix, bt, getFieldTags(f))
+		fmt.Fprintf(buf, "%s %s%s\n", strings.Title(f.Alias), typePrefix, bt)
 		return
 	}
 }
@@ -114,24 +123,4 @@ func isSingleFragment(sel ast.SelectionSet) bool {
 		return ok
 	}
 	return false
-}
-
-func getFieldTags(f *ast.Field) string {
-	tm := map[string]string{
-		`type`: f.Definition.Type.Name(),
-	}
-	if f.Name != f.Alias {
-		tm[`name`] = f.Name
-	}
-	t := `docgen:"`
-	first := true
-	for k, v := range tm {
-		if first {
-			first = false
-		} else {
-			t += ", "
-		}
-		t += k + ":'" + v + "'"
-	}
-	return t + `"`
 }
