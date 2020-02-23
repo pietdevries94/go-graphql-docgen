@@ -99,7 +99,7 @@ func writeField(buf *bytes.Buffer, f *ast.Field) {
 }
 
 func writeFragment(buf *bytes.Buffer, f *ast.FragmentSpread) {
-	fmt.Fprintf(buf, "*%sFragment\n", f.Name)
+	fmt.Fprintf(buf, "*%sFragment\n", strings.Title(f.Name))
 }
 
 func nameFromFileName(fn string) string {
