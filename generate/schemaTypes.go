@@ -34,7 +34,7 @@ func generateObjectType(buf *bytes.Buffer, td *ast.Definition) {
 	for _, f := range td.Fields {
 		typePrefix := generateTypePrefix(f.Type)
 		typeName := getFieldDefinitionTypeName(f) + "Type"
-		if tn, ok := buildInTypeMap[f.Type.NamedType]; ok {
+		if tn, ok := getBuildinTypeName(f.Type); ok {
 			typeName = tn
 		}
 		fmt.Fprintf(buf, "%s %s%s\n", getFieldDefinitionName(f), typePrefix, typeName)

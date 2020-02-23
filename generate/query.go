@@ -51,7 +51,7 @@ func generateVariablesStruct(buf *bytes.Buffer, op *ast.OperationDefinition, nam
 		if isPointer(varDef.Type) {
 			typePrefix = "*"
 		}
-		if bt, ok := buildInTypeMap[varDef.Type.Name()]; ok {
+		if bt, ok := getBuildinTypeName(varDef.Type); ok {
 			fmt.Fprintf(buf, "%s %s%s\n", name, typePrefix, bt)
 		}
 	}
@@ -92,7 +92,7 @@ func writeField(buf *bytes.Buffer, f *ast.Field) {
 		return
 	}
 
-	if bt, ok := buildInTypeMap[f.Definition.Type.Name()]; ok {
+	if bt, ok := getBuildinTypeName(f.Definition.Type); ok {
 		fmt.Fprintf(buf, "%s %s%s `%s`\n", strings.Title(f.Alias), typePrefix, bt, getFieldTags(f))
 		return
 	}

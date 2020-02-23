@@ -35,3 +35,12 @@ func getFieldDefinitionTypeName(f *ast.FieldDefinition) string {
 func getFieldDefinitionName(f *ast.FieldDefinition) string {
 	return strings.Title(f.Name)
 }
+
+func getBuildinTypeName(t *ast.Type) (string, bool) {
+	buildinLookupKey := t.NamedType
+	if t.Elem != nil {
+		buildinLookupKey = t.Elem.NamedType
+	}
+	tn, ok := buildInTypeMap[buildinLookupKey]
+	return tn, ok
+}
