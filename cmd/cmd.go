@@ -15,8 +15,6 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-// const endpoint = "https://favware.tech/api"
-
 func Execute() {
 	cfg, err := config.LoadConfig()
 	if err != nil {

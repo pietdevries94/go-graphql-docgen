@@ -42,31 +42,11 @@ func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult, generateClie
 			fmt.Fprintf(buf, "type %sQueryResult ", name)
 			generateStruct(buf, op.SelectionSet)
 
-			if len(op.VariableDefinitions) > 0 {
-				generateVariablesStruct(buf, op, name)
-			}
-
 			if generateClient {
 				generateClientFunction(buf, op, name)
 			}
 		}
 	}
-}
-
-func generateVariablesStruct(buf *bytes.Buffer, op *ast.OperationDefinition, name string) {
-	fmt.Fprintf(buf, "type %sQueryVariables struct {\n", name)
-	for _, varDef := range op.VariableDefinitions {
-		typePrefix := ""
-		if isPointer(varDef.Type) {
-			typePrefix = "*"
-		}
-		tn := strings.Title(varDef.Type.Name()) + "Type"
-		if bt, ok := getBuildinTypeName(varDef.Type); ok {
-			tn = bt
-		}
-		fmt.Fprintf(buf, "%s %s%s\n", name, typePrefix, tn)
-	}
-	buf.WriteString("}\n\n")
 }
 
 func generateStruct(buf *bytes.Buffer, set ast.SelectionSet) {
