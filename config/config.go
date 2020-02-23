@@ -10,7 +10,7 @@ type Config struct {
 	SchemaFilename string `yaml:"schema"`
 	QueriesFolder  string `yaml:"queries_folder"`
 	Output         struct {
-		File    string `yaml:"file"`
+		Folder  string `yaml:"folder"`
 		Package string `yaml:"package"`
 	} `yaml:"output"`
 }
