@@ -51,9 +51,11 @@ func generateVariablesStruct(buf *bytes.Buffer, op *ast.OperationDefinition, nam
 		if isPointer(varDef.Type) {
 			typePrefix = "*"
 		}
+		tn := varDef.Type.Name() + "Type"
 		if bt, ok := getBuildinTypeName(varDef.Type); ok {
-			fmt.Fprintf(buf, "%s %s%s\n", name, typePrefix, bt)
+			tn = bt
 		}
+		fmt.Fprintf(buf, "%s %s%s\n", name, typePrefix, tn)
 	}
 	buf.WriteString("}\n\n")
 }

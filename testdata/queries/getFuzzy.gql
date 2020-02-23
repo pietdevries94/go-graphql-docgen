@@ -1,0 +1,7 @@
+#import "../fragments/pokemonDetail.gql"
+
+query getFuzzy($name: String!) {
+  getPokemonDetailsByFuzzy(pokemon: $name) {
+      ...pokemonDetail
+  }
+}

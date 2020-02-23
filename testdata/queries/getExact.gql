@@ -1,0 +1,7 @@
+#import "../fragments/pokemonDetail.gql"
+
+query getExact($name: Pokemon!) {
+  getPokemonDetailsByName(pokemon: $name) {
+      ...pokemonDetail
+  }
+}
