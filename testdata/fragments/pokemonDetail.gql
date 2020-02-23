@@ -1,0 +1,4 @@
+fragment pokemonDetail on DexDetails {
+  num
+  species
+}

@@ -12,7 +12,7 @@ import (
 	"github.com/pietdevries94/go-graphql-docgen/parser"
 )
 
-// const endpoint = "https://countries.trevorblades.com/"
+// const endpoint = "https://favware.tech/api"
 
 func Execute() {
 	cfg, err := config.LoadConfig()

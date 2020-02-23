@@ -4,4 +4,4 @@ WIP
 
 ## Testdata source
 
-The schema and endpoint used in the testdata of this repo is from [trevorblade/countries](https://github.com/trevorblades/countries)
+The schema and endpoint used in the testdata of this repo is from [favware/graphql-pokemon](https://github.com/favware/graphql-pokemon)

@@ -1,0 +1,8 @@
+#import "../fragments/pokemonDetail.gql"
+
+query getMorePikachu {
+  getPokemonDetails(pokemon: pikachu) {
+      ...pokemonDetail
+      colour: color
+  }
+}

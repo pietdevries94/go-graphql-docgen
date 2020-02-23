@@ -1,7 +1,0 @@
-#import "../fragments/country.gql"
-
-query AllCountriesWithPartial {
-  countries {
-    ...CountryPartial
-  }
-}

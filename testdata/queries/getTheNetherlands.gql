@@ -1,6 +1,0 @@
-query Foo {
-  country(code:"NL") {
-    hoi: name
-    emoji
-  }
-}
