@@ -1,6 +1,10 @@
 package generate
 
-import "github.com/vektah/gqlparser/v2/ast"
+import (
+	"strings"
+
+	"github.com/vektah/gqlparser/v2/ast"
+)
 
 func isArray(t *ast.Type) bool {
 	return t.Elem != nil
@@ -22,4 +26,12 @@ func generateTypePrefix(t *ast.Type) string {
 		}
 	}
 	return typePrefix
+}
+
+func getFieldDefinitionTypeName(f *ast.FieldDefinition) string {
+	return strings.Title(f.Type.Name())
+}
+
+func getFieldDefinitionName(f *ast.FieldDefinition) string {
+	return strings.Title(f.Name)
 }
