@@ -13,7 +13,7 @@ func main() {
 	}
 	fmt.Println(pika.GetPokemonDetails.Species)
 
-	charm, err := c.GetExact(testoutput.CharmanderPokemon, nil)
+	charm, err := c.GetExact(testoutput.PokemonCharmander, nil)
 	if err != nil {
 		panic(err)
 	}

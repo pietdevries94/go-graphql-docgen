@@ -53,7 +53,7 @@ func generateEnum(buf *bytes.Buffer, td *ast.Definition) {
 	fmt.Fprint(buf, "\nconst (")
 	for _, v := range td.EnumValues {
 		writeComment(buf, v.Description)
-		fmt.Fprintf(buf, "%s%s %sType = \"%s\"\n", strings.Title(v.Name), tn, tn, v.Name)
+		fmt.Fprintf(buf, "%s%s %sType = \"%s\"\n", tn, strings.Title(v.Name), tn, v.Name)
 	}
 	fmt.Fprint(buf, ")")
 }
