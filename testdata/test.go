@@ -18,4 +18,10 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(charm.GetPokemonDetailsByName.Species)
+
+	morePika, err := c.GetMorePikachu(nil)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(morePika.GetPokemonDetails.GetFullType().FlavorTexts[0].Flavor)
 }

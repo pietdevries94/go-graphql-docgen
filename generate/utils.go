@@ -31,7 +31,7 @@ func generateTypePrefix(t *ast.Type) string {
 }
 
 func getFieldDefinitionTypeName(f *ast.FieldDefinition) string {
-	return strings.Title(f.Type.Name())
+	return strings.Title(f.Type.Name()) + "Type"
 }
 
 func getFieldDefinitionName(f *ast.FieldDefinition) string {
@@ -52,4 +52,8 @@ func writeComment(buf *bytes.Buffer, description string) {
 		return
 	}
 	fmt.Fprintf(buf, "// %s", description)
+}
+
+func stringLower(str string) string {
+	return strings.ToLower(str[:1]) + str[1:]
 }

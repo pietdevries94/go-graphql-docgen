@@ -31,7 +31,11 @@ func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult, generateClie
 			}
 			generatedFragments = append(generatedFragments, name)
 
-			generateStruct(buf, frag.SelectionSet, fmt.Sprintf("%sFragment", strings.Title(name)))
+			typeName := fmt.Sprintf("%sFragment", strings.Title(name))
+			generateStruct(buf, frag.SelectionSet, typeName)
+
+			resultType := frag.Definition.Name + "Type"
+			generateGetTypeFunc(buf, typeName, resultType, frag.SelectionSet)
 		}
 		for _, op := range query.Operations {
 			name := op.Name
@@ -55,7 +59,7 @@ type structGenerator struct {
 
 func generateStruct(buf *bytes.Buffer, set ast.SelectionSet, name string) {
 	sg := structGenerator{[]*bytes.Buffer{}}
-	sg.generateStruct(set, name)
+	sg.generateStruct(set, name, nil)
 	for _, b := range sg.bufs {
 		_, err := buf.ReadFrom(b)
 		if err != nil {
@@ -64,7 +68,7 @@ func generateStruct(buf *bytes.Buffer, set ast.SelectionSet, name string) {
 	}
 }
 
-func (sg *structGenerator) generateStruct(set ast.SelectionSet, name string) {
+func (sg *structGenerator) generateStruct(set ast.SelectionSet, name string, f *ast.Field) {
 	buf := bytes.NewBufferString("type ")
 	sg.bufs = append(sg.bufs, buf)
 	fmt.Fprintf(buf, "%s struct {\n", name)
@@ -72,6 +76,11 @@ func (sg *structGenerator) generateStruct(set ast.SelectionSet, name string) {
 		sg.parseSelection(buf, sel, name)
 	}
 	buf.WriteString("}\n\n")
+
+	if f != nil {
+		tn := getFieldDefinitionTypeName(f.Definition)
+		generateGetTypeFunc(buf, name, tn, f.SelectionSet)
+	}
 }
 
 func (sg *structGenerator) parseSelection(buf *bytes.Buffer, sel ast.Selection, name string) {
@@ -95,7 +104,7 @@ func (sg *structGenerator) writeField(buf *bytes.Buffer, f *ast.Field, name stri
 		tn := name + strings.Title(f.Alias)
 		fmt.Fprintf(buf, "%s %s%s\n\n", strings.Title(f.Alias), typePrefix, tn)
 
-		sg.generateStruct(f.SelectionSet, tn)
+		sg.generateStruct(f.SelectionSet, tn, f)
 		return
 	}
 
@@ -118,4 +127,40 @@ func isSingleFragment(sel ast.SelectionSet) bool {
 		return ok
 	}
 	return false
+}
+
+func generateGetTypeFunc(buf *bytes.Buffer, name, result string, ss ast.SelectionSet) {
+	fmt.Fprintf(buf, "func (v %s) GetFullType() %s{\n", name, result)
+
+	valsBuf := bytes.NewBuffer(nil)
+	for _, sel := range ss {
+		if f, ok := sel.(*ast.Field); ok {
+			propName := strings.Title(f.Name)
+			val := "v." + strings.Title(f.Alias)
+			if f.SelectionSet != nil {
+				if f.Definition.Type.Elem != nil {
+					varName := stringLower(f.Alias)
+					fmt.Fprintf(buf, "%s := []%sType{}\n", varName, f.Definition.Type.Name())
+					fmt.Fprintf(buf, "for _, v := range %s {\n%s = append(%s, v.GetFullType())\n}\n", val, varName, varName)
+					val = varName
+				} else {
+					if !f.Definition.Type.NonNull {
+						val = "*" + val
+					}
+					val += ".GetFullType()"
+				}
+			}
+
+			fmt.Fprintf(valsBuf, "%s: %s,\n", propName, val)
+		} else if frag, ok := sel.(*ast.FragmentSpread); ok {
+			fmt.Fprintf(valsBuf, "// TODO: Fragments (%s)\n", frag.Name)
+		}
+	}
+
+	fmt.Fprintf(buf, "return %s{\n", result)
+	_, err := buf.ReadFrom(valsBuf)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprint(buf, "}\n}\n\n")
 }
