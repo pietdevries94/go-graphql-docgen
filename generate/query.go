@@ -30,8 +30,8 @@ func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult, generateClie
 				}
 			}
 			generatedFragments = append(generatedFragments, name)
-			fmt.Fprintf(buf, "type %sFragment ", strings.Title(name))
-			generateStruct(buf, frag.SelectionSet)
+
+			generateStruct(buf, frag.SelectionSet, fmt.Sprintf("%sFragment", strings.Title(name)))
 		}
 		for _, op := range query.Operations {
 			name := op.Name
@@ -39,8 +39,8 @@ func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult, generateClie
 				name = nameFromFileName(query.Position.Src.Name)
 			}
 			name = strings.Title(name)
-			fmt.Fprintf(buf, "type %sQueryResult ", name)
-			generateStruct(buf, op.SelectionSet)
+
+			generateStruct(buf, op.SelectionSet, fmt.Sprintf("%sQueryResult", name))
 
 			if generateClient {
 				generateClientFunction(buf, op, name)
@@ -49,47 +49,62 @@ func GenerateQueries(buf *bytes.Buffer, parsed *parser.ParseResult, generateClie
 	}
 }
 
-func generateStruct(buf *bytes.Buffer, set ast.SelectionSet) {
-	buf.WriteString("struct {\n")
+type structGenerator struct {
+	bufs []*bytes.Buffer
+}
+
+func generateStruct(buf *bytes.Buffer, set ast.SelectionSet, name string) {
+	sg := structGenerator{[]*bytes.Buffer{}}
+	sg.generateStruct(set, name)
+	for _, b := range sg.bufs {
+		_, err := buf.ReadFrom(b)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (sg *structGenerator) generateStruct(set ast.SelectionSet, name string) {
+	buf := bytes.NewBufferString("type ")
+	sg.bufs = append(sg.bufs, buf)
+	fmt.Fprintf(buf, "%s struct {\n", name)
 	for _, sel := range set {
-		parseSelection(buf, sel)
+		sg.parseSelection(buf, sel, name)
 	}
 	buf.WriteString("}\n\n")
 }
 
-func parseSelection(buf *bytes.Buffer, sel ast.Selection) {
+func (sg *structGenerator) parseSelection(buf *bytes.Buffer, sel ast.Selection, name string) {
 	if f, ok := sel.(*ast.Field); ok {
-		writeField(buf, f)
+		sg.writeField(buf, f, name)
 	} else if frag, ok := sel.(*ast.FragmentSpread); ok {
-		writeFragment(buf, frag)
+		sg.writeFragment(buf, frag)
 	}
 }
 
-func writeField(buf *bytes.Buffer, f *ast.Field) {
+func (sg *structGenerator) writeField(buf *bytes.Buffer, f *ast.Field, name string) {
 	typePrefix := generateTypePrefix(f.Definition.Type)
 
 	if isSingleFragment(f.SelectionSet) {
 		fmt.Fprintf(buf, "%s %s", strings.Title(f.Alias), typePrefix)
-		writeFragment(buf, f.SelectionSet[0].(*ast.FragmentSpread))
+		sg.writeFragment(buf, f.SelectionSet[0].(*ast.FragmentSpread))
 		return
 	}
 
 	if f.SelectionSet != nil {
-		fmt.Fprintf(buf, "%s %sstruct {\n", strings.Title(f.Alias), typePrefix)
-		for _, sel := range f.SelectionSet {
-			parseSelection(buf, sel)
-		}
-		fmt.Fprint(buf, "}\n")
+		tn := name + strings.Title(f.Alias)
+		fmt.Fprintf(buf, "%s %s%s\n\n", strings.Title(f.Alias), typePrefix, tn)
+
+		sg.generateStruct(f.SelectionSet, tn)
 		return
 	}
 
 	if bt, ok := getBuildinTypeName(f.Definition.Type); ok {
 		fmt.Fprintf(buf, "%s %s%s\n", strings.Title(f.Alias), typePrefix, bt)
-		return
 	}
 }
 
-func writeFragment(buf *bytes.Buffer, f *ast.FragmentSpread) {
+func (sg *structGenerator) writeFragment(buf *bytes.Buffer, f *ast.FragmentSpread) {
 	fmt.Fprintf(buf, "*%sFragment\n", strings.Title(f.Name))
 }
 

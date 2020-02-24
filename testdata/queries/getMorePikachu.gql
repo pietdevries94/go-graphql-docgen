@@ -4,5 +4,9 @@ query getMorePikachu {
   getPokemonDetails(pokemon: pikachu) {
       ...pokemonDetail
       colour: color
+      flavorTexts {
+        game
+        flavor
+      }
   }
 }
