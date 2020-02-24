@@ -1,6 +1,8 @@
 package generate
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
 
 	"github.com/vektah/gqlparser/v2/ast"
@@ -43,4 +45,11 @@ func getBuildinTypeName(t *ast.Type) (string, bool) {
 	}
 	tn, ok := buildInTypeMap[buildinLookupKey]
 	return tn, ok
+}
+
+func writeComment(buf *bytes.Buffer, description string) {
+	if description == "" {
+		return
+	}
+	fmt.Fprintf(buf, "// %s", description)
 }

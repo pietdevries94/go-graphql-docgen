@@ -15,6 +15,7 @@ func GenerateSchemaTypes(buf *bytes.Buffer, parsed *parser.ParseResult, scalars 
 		if td.BuiltIn {
 			continue
 		}
+		writeComment(buf, td.Description)
 		fmt.Fprintf(buf, "type %sType ", strings.Title(td.Name))
 		switch td.Kind {
 		case ast.Object:
@@ -34,6 +35,7 @@ func GenerateSchemaTypes(buf *bytes.Buffer, parsed *parser.ParseResult, scalars 
 func generateObjectType(buf *bytes.Buffer, td *ast.Definition) {
 	fmt.Fprint(buf, "struct{\n")
 	for _, f := range td.Fields {
+		writeComment(buf, f.Description)
 		typePrefix := generateTypePrefix(f.Type)
 		typeName := getFieldDefinitionTypeName(f) + "Type"
 		if tn, ok := getBuildinTypeName(f.Type); ok {
@@ -50,6 +52,7 @@ func generateEnum(buf *bytes.Buffer, td *ast.Definition) {
 	tn := strings.Title(td.Name)
 	fmt.Fprint(buf, "\nconst (")
 	for _, v := range td.EnumValues {
+		writeComment(buf, v.Description)
 		fmt.Fprintf(buf, "%s%s %sType = \"%s\"\n", strings.Title(v.Name), tn, tn, v.Name)
 	}
 	fmt.Fprint(buf, ")")
