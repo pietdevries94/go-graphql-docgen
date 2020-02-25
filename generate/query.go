@@ -130,9 +130,8 @@ func isSingleFragment(sel ast.SelectionSet) bool {
 }
 
 func generateGetTypeFunc(buf *bytes.Buffer, name, result string, ss ast.SelectionSet) {
-	fmt.Fprintf(buf, "func (v %s) GetFullType() %s{\n", name, result)
+	fmt.Fprintf(buf, "func (v %s) ApplyToFullType(obj %s) %s{\n", name, result, result)
 
-	valsBuf := bytes.NewBuffer(nil)
 	for _, sel := range ss {
 		if f, ok := sel.(*ast.Field); ok {
 			propName := strings.Title(f.Name)
@@ -151,16 +150,14 @@ func generateGetTypeFunc(buf *bytes.Buffer, name, result string, ss ast.Selectio
 				}
 			}
 
-			fmt.Fprintf(valsBuf, "%s: %s,\n", propName, val)
+			fmt.Fprintf(buf, "obj.%s = %s\n", propName, val)
 		} else if frag, ok := sel.(*ast.FragmentSpread); ok {
-			fmt.Fprintf(valsBuf, "// TODO: Fragments (%s)\n", frag.Name)
+			fmt.Fprintf(buf, "obj = v.%sFragment.ApplyToFullType(obj)\n", strings.Title(frag.Name))
 		}
 	}
 
-	fmt.Fprintf(buf, "return %s{\n", result)
-	_, err := buf.ReadFrom(valsBuf)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Fprint(buf, "}\n}\n\n")
+	fmt.Fprint(buf, "return obj\n}\n\n")
+
+	fmt.Fprintf(buf, "func (v %s) GetFullType() %s{\nreturn v.ApplyToFullType(%s{})\n}\n\n", name, result, result)
+
 }
