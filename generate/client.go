@@ -20,7 +20,10 @@ func createBaseClient(buf *bytes.Buffer) {
 		c *graphql.Client
 	}
 
-	type RequestOptions struct {}
+	type RequestOptions struct {
+		Headers map[string]string
+		Ctx     context.Context
+	}
 	
 	func NewClient(endpoint string, opts ...graphql.ClientOption) *Client {
 		c := graphql.NewClient(endpoint, opts...)
@@ -28,7 +31,17 @@ func createBaseClient(buf *bytes.Buffer) {
 	}
 
 	func (client *Client) run(req *graphql.Request, options *RequestOptions, respData interface{}) error {
-		ctx := context.Background()
+		var ctx context.Context
+		if options != nil && options.Ctx != nil {
+			ctx = options.Ctx
+		} else {
+			ctx = context.Background()
+		}
+		if options != nil && options.Headers != nil {
+			for k, v := range options.Headers {
+				req.Header.Add(k, v)
+			}
+		}
 		return client.c.Run(ctx, req, respData)
 	}
 `)
